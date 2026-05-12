@@ -3,11 +3,12 @@ const KV_URL = process.env.KV_REST_API_URL;
 const KV_TOKEN = process.env.KV_REST_API_TOKEN;
 
 async function kvSet(key, value) {
-  await fetch(`${KV_URL}/set/${key}`, {
+  const res = await fetch(KV_URL, {
     method: 'POST',
     headers: { Authorization: `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(JSON.stringify(value)),
+    body: JSON.stringify(['SET', key, JSON.stringify(value)]),
   });
+  return res.json();
 }
 
 module.exports = async function handler(req, res) {
