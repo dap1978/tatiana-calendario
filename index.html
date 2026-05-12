@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendario Tatiana · Firmaway</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream:#FFFBF5;--cream-warm:#FEF1E0;--orange:#F15A2F;--orange-soft:#FDEEE9;
+    --ink:#31353D;--ink-light:rgba(49,53,61,0.45);--ink-faint:rgba(49,53,61,0.10);
+    --green:#1E6B45;--green-light:#D6F0E2;--green-mid:#7ECDA0;
+    --amber:#8A5C00;--amber-light:#FEF3C7;--amber-mid:#FCD34D;--gray-light:#ECEAE4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--cream);color:var(--ink);font-family:'Inter',system-ui,sans-serif;min-height:100vh;padding:36px 20px 60px;-webkit-font-smoothing:antialiased}
+  .app{max-width:780px;margin:0 auto}
+  .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid var(--ink-faint)}
+  .logo-text{font-size:20px;font-weight:700;letter-spacing:-0.03em;color:var(--ink)}
+  .logo-text span{color:var(--orange)}
+  .header-right{text-align:right}
+  .header-right h1{font-size:17px;font-weight:700;letter-spacing:-0.03em}
+  .header-right p{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-light);margin-top:2px}
+  .card{background:var(--cream-warm);border:1.5px solid var(--ink);border-radius:14px;padding:22px 24px;margin-bottom:14px;box-shadow:4px 4px 0px 0px var(--ink)}
+  .card-orange{box-shadow:4px 4px 0px 0px var(--orange);border-color:var(--orange)}
+  .card-label{font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-light);margin-bottom:14px}
+  .month-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .month-row select,.month-row input[type=number]{appearance:none;background:var(--cream);border:1.5px solid var(--ink);border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:var(--ink);padding:8px 14px;cursor:pointer;outline:none}
+  .month-row select:focus,.month-row input[type=number]:focus{border-color:var(--orange)}
+  .month-row input[type=number]{width:86px}
+  .schedules-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .sched-item{background:var(--cream);border:1.5px solid var(--ink-faint);border-radius:10px;padding:12px 14px}
+  .sched-label{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;color:var(--ink)}
+  .sdot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+  .time-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:6px}
+  .time-row input[type=time]{appearance:none;background:var(--cream-warm);border:1.5px solid var(--ink-faint);border-radius:6px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--ink);padding:5px 7px;outline:none;width:88px}
+  .time-row input[type=time]:focus{border-color:var(--orange)}
+  .time-sep{font-size:12px;color:var(--ink-light)}
+  .bloque-lbl{font-size:10px;color:var(--ink-light);font-weight:500;width:100%}
+  .legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .legend-btn{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--ink);cursor:pointer;padding:6px 12px;border-radius:999px;border:1.5px solid var(--ink-faint);background:var(--cream);transition:all 0.12s;user-select:none}
+  .legend-btn:hover{border-color:var(--ink)}
+  .legend-btn.active-full{background:var(--green-light);border-color:var(--green-mid);color:var(--green)}
+  .legend-btn.active-clases{background:var(--amber-light);border-color:var(--amber-mid);color:var(--amber)}
+  .legend-btn.active-libre{background:var(--gray-light);border-color:#C5C2BB;color:var(--ink-light)}
+  .ldot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+  .cal-header{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+  .cal-header span{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-light);text-align:center;padding:5px 0}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .day-cell{border-radius:8px;min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:8px 3px 6px;cursor:pointer;border:1.5px solid transparent;transition:transform 0.1s;user-select:none}
+  .day-cell:not(.empty):not(.state-libre):hover{transform:translateY(-1px)}
+  .day-cell.empty{background:transparent;cursor:default;pointer-events:none}
+  .day-cell.state-none{background:var(--cream);border-color:var(--ink-faint)}
+  .day-cell.state-full{background:var(--green-light);border-color:var(--green-mid)}
+  .day-cell.state-clases{background:var(--amber-light);border-color:var(--amber-mid)}
+  .day-cell.state-libre{background:var(--gray-light);border-color:transparent;cursor:default}
+  .day-num{font-size:13px;font-weight:700;line-height:1;margin-bottom:5px}
+  .state-none .day-num{color:var(--ink-light)}
+  .state-full .day-num{color:var(--green)}
+  .state-clases .day-num{color:var(--amber)}
+  .state-libre .day-num{color:#A8A49D}
+  .day-tag{font-size:8px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;border-radius:3px;padding:2px 4px;line-height:1.4;text-align:center}
+  .state-full .day-tag{background:var(--green-mid);color:var(--green)}
+  .state-clases .day-tag{background:var(--amber-mid);color:var(--amber)}
+  .note{font-size:12px;line-height:1.7;color:var(--ink);border-left:3px solid var(--orange);background:var(--orange-soft);border-radius:0 8px 8px 0;padding:10px 14px;margin-top:14px}
+  .reset-link{font-size:12px;color:var(--ink-light);cursor:pointer;text-decoration:underline;text-underline-offset:3px;margin-top:10px;display:inline-block}
+  .reset-link:hover{color:var(--orange)}
+  .summary-block{display:none}
+  .summary-block.visible{display:block}
+  .summary-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px}
+  .summary-table th{font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-light);text-align:left;padding:6px 10px;border-bottom:1px solid var(--ink-faint)}
+  .summary-table td{padding:9px 10px;border-bottom:1px solid var(--ink-faint);color:var(--ink);vertical-align:top}
+  .summary-table tr:last-child td{border-bottom:none}
+  .badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;border-radius:4px;padding:2px 7px}
+  .badge-green{background:var(--green-light);color:var(--green)}
+  .badge-amber{background:var(--amber-light);color:var(--amber)}
+  .badge-gray{background:var(--gray-light);color:var(--ink-light)}
+  .copy-area{background:var(--cream);border:1.5px solid var(--ink-faint);border-radius:8px;padding:14px 16px;font-family:'Inter',monospace;font-size:12px;line-height:1.9;color:var(--ink);white-space:pre-wrap}
+  .btn-row{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:6px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:10px 20px;cursor:pointer;transition:opacity 0.15s,transform 0.12s}
+  .btn:hover{opacity:0.88;transform:translateY(-1px)}
+  .btn:active{transform:scale(0.98)}
+  .btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink-faint)}
+  .btn-ghost:hover{background:var(--cream-warm);opacity:1}
+  .btn-slack{background:var(--ink)}
+  .toast{display:none;font-size:12px;font-weight:600;padding:6px 12px;border-radius:6px}
+  .toast.show{display:inline-block}
+  .toast-copy{color:var(--green);background:var(--green-light)}
+  .toast-slack-ok{color:var(--green);background:var(--green-light)}
+  .toast-slack-err{color:#B91C1C;background:#FEE2E2}
+  .sending{opacity:0.6;pointer-events:none}
+  @media(max-width:500px){.card{padding:16px}.schedules-grid{grid-template-columns:1fr}.day-cell{min-height:54px}.day-num{font-size:11px}.header{flex-direction:column;gap:10px}.header-right{text-align:left}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo-text">Firmaway<span>.</span></div>
+    <div class="header-right">
+      <h1>Calendario de Tatiana</h1>
+      <p>Horarios mensuales &middot; Malta &rarr; Argentina</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">01 &middot; Mes y a&ntilde;o</div>
+    <div class="month-row">
+      <select id="monthSel">
+        <option value="0">Enero</option><option value="1">Febrero</option>
+        <option value="2">Marzo</option><option value="3">Abril</option>
+        <option value="4" selected>Mayo</option><option value="5">Junio</option>
+        <option value="6">Julio</option><option value="7">Agosto</option>
+        <option value="8">Septiembre</option><option value="9">Octubre</option>
+        <option value="10">Noviembre</option><option value="11">Diciembre</option>
+      </select>
+      <input type="number" id="yearSel" value="2025" min="2024" max="2030">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">02 &middot; Horarios (editables)</div>
+    <div class="schedules-grid">
+      <div class="sched-item">
+        <div class="sched-label"><div class="sdot" style="background:var(--green-mid)"></div> D&iacute;a full</div>
+        <div class="time-row">
+          <input type="time" id="full-start" value="09:00">
+          <span class="time-sep">&ndash;</span>
+          <input type="time" id="full-end" value="18:00">
+        </div>
+      </div>
+      <div class="sched-item">
+        <div class="sched-label"><div class="sdot" style="background:var(--amber-mid)"></div> D&iacute;a con clases</div>
+        <div class="time-row">
+          <input type="time" id="clases-s1" value="08:00">
+          <span class="time-sep">&ndash;</span>
+          <input type="time" id="clases-e1" value="11:30">
+          <span class="bloque-lbl">Bloque 1</span>
+        </div>
+        <div class="time-row">
+          <input type="time" id="clases-s2" value="16:00">
+          <span class="time-sep">&ndash;</span>
+          <input type="time" id="clases-e2" value="19:00">
+          <span class="bloque-lbl">Bloque 2</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-orange">
+    <div class="card-label">03 &middot; Marc&aacute; los d&iacute;as</div>
+    <div class="legend">
+      <div class="legend-btn active-full" id="btn-full" onclick="setMode('full')">
+        <div class="ldot" style="background:var(--green-mid)"></div> Full
+      </div>
+      <div class="legend-btn" id="btn-clases" onclick="setMode('clases')">
+        <div class="ldot" style="background:var(--amber-mid)"></div> Clases
+      </div>
+      <div class="legend-btn" id="btn-libre" onclick="setMode('libre')">
+        <div class="ldot" style="background:#C5C2BB"></div> No trabaja
+      </div>
+    </div>
+    <div class="cal-header">
+      <span>Lun</span><span>Mar</span><span>Mi&eacute;</span>
+      <span>Jue</span><span>Vie</span><span>S&aacute;b</span><span>Dom</span>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="note">
+      <strong>Record&aacute;:</strong> d&iacute;as con clases &rarr; no agendar exactamente a las <strong id="note-e1">11:30</strong> ni a las <strong id="note-s2">16:00</strong> (colectivos impredecibles en Malta).
+    </div>
+    <span class="reset-link" onclick="resetAll()">&#8635; Limpiar todo</span>
+  </div>
+
+  <div class="card summary-block" id="summaryCard">
+    <div class="card-label">04 &middot; Resumen generado</div>
+    <table class="summary-table" id="summaryTable"></table>
+    <div class="copy-area" id="copyArea"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="copyText()">Copiar texto</button>
+      <button class="btn btn-slack" onclick="sendToSlack()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.95 9.79 19.79 19.79 0 01.88 1.18 2 2 0 012.86 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg>
+        Enviar a Daniel
+      </button>
+      <span class="toast toast-copy" id="toastCopy">Copiado!</span>
+      <span class="toast toast-slack-ok" id="toastOk">Enviado a Slack!</span>
+      <span class="toast toast-slack-err" id="toastErr">Error al enviar</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const WEBHOOK='/api/slack';
+let mode='full', dayStates={};
+const g=id=>document.getElementById(id).value;
+
+function updateNoteHours(){
+  document.getElementById('note-e1').textContent=g('clases-e1');
+  document.getElementById('note-s2').textContent=g('clases-s2');
+}
+['full-start','full-end','clases-s1','clases-e1','clases-s2','clases-e2'].forEach(id=>{
+  document.getElementById(id).addEventListener('change',()=>{updateNoteHours();updateSummary();});
+});
+
+function setMode(m){
+  mode=m;
+  ['full','clases','libre'].forEach(x=>{
+    document.getElementById('btn-'+x).className='legend-btn'+(x===m?' active-'+x:'');
+  });
+}
+
+function buildCalendar(){
+  const month=+g('monthSel'),year=+g('yearSel');
+  const days=new Date(year,month+1,0).getDate();
+  let fd=new Date(year,month,1).getDay();fd=fd===0?6:fd-1;
+  const grid=document.getElementById('calGrid');
+  grid.innerHTML='';dayStates={};
+  for(let i=0;i<fd;i++){const e=document.createElement('div');e.className='day-cell empty';grid.appendChild(e);}
+  for(let d=1;d<=days;d++){
+    const dow=new Date(year,month,d).getDay();
+    const isWE=dow===0||dow===6;
+    dayStates[d]=isWE?'libre':'none';
+    const cell=document.createElement('div');
+    cell.id='day-'+d;
+    renderCell(cell,d);
+    if(!isWE)cell.onclick=()=>clickDay(d);
+    grid.appendChild(cell);
+  }
+  updateSummary();
+}
+
+function renderCell(cell,d){
+  const s=dayStates[d];
+  cell.className='day-cell state-'+s;
+  const tag=s==='full'?'<span class="day-tag">Full</span>':s==='clases'?'<span class="day-tag">Clases</span>':'';
+  cell.innerHTML='<span class="day-num">'+d+'</span>'+tag;
+}
+
+function clickDay(d){
+  dayStates[d]=mode;
+  renderCell(document.getElementById('day-'+d),d);
+  updateSummary();
+}
+
+function resetAll(){
+  const month=+g('monthSel'),year=+g('yearSel');
+  const days=new Date(year,month+1,0).getDate();
+  for(let d=1;d<=days;d++){
+    const dow=new Date(year,month,d).getDay();
+    dayStates[d]=(dow===0||dow===6)?'libre':'none';
+    const c=document.getElementById('day-'+d);if(c)renderCell(c,d);
+  }
+  updateSummary();
+}
+
+function getSummaryText(){
+  const month=+g('monthSel'),year=+g('yearSel');
+  const days=new Date(year,month+1,0).getDate();
+  const gr={full:[],clases:[],libre:[]};
+  for(let d=1;d<=days;d++){const s=dayStates[d];if(s&&s!=='none'&&gr[s])gr[s].push(d);}
+  const fs=g('full-start')+' - '+g('full-end');
+  const cs=g('clases-s1')+'-'+g('clases-e1')+' / '+g('clases-s2')+'-'+g('clases-e2');
+  const mn=MONTHS[month];
+  const lines=[
+    'Tatiana - Horarios '+mn+' '+year,'',
+    ...(gr.full.length?['FULL ('+fs+'): '+gr.full.join(', ')]:[]),
+    ...(gr.clases.length?['CLASES ('+cs+'): '+gr.clases.join(', ')]:[]),
+    ...(gr.libre.length?['NO TRABAJA: '+gr.libre.join(', ')]:[]),
+    '','Dias con clases: evitar reuniones exactamente a las '+g('clases-e1')+' y las '+g('clases-s2')+'.'
+  ];
+  return {text:lines.join('\n'), gr, fs, cs, mn, year};
+}
+
+function updateSummary(){
+  const month=+g('monthSel'),year=+g('yearSel');
+  const days=new Date(year,month+1,0).getDate();
+  const gr={full:[],clases:[],libre:[]};
+  for(let d=1;d<=days;d++){const s=dayStates[d];if(s&&s!=='none'&&gr[s])gr[s].push(d);}
+  const hasData=gr.full.length>0||gr.clases.length>0;
+  const card=document.getElementById('summaryCard');
+  if(!hasData){card.classList.remove('visible');return;}
+  card.classList.add('visible');
+  const fs=g('full-start')+' - '+g('full-end');
+  const cs=g('clases-s1')+'-'+g('clases-e1')+' / '+g('clases-s2')+'-'+g('clases-e2');
+  document.getElementById('summaryTable').innerHTML=
+    '<thead><tr><th>Estado</th><th>Dias</th><th>Horario (hora ARG)</th></tr></thead><tbody>'+
+    (gr.full.length?'<tr><td><span class="badge badge-green">Full</span></td><td>'+gr.full.join(', ')+'</td><td>'+fs+'</td></tr>':'')+
+    (gr.clases.length?'<tr><td><span class="badge badge-amber">Clases</span></td><td>'+gr.clases.join(', ')+'</td><td>'+cs+'</td></tr>':'')+
+    (gr.libre.length?'<tr><td><span class="badge badge-gray">Libre</span></td><td>'+gr.libre.join(', ')+'</td><td>-</td></tr>':'')+
+    '</tbody>';
+  document.getElementById('copyArea').textContent=getSummaryText().text;
+}
+
+function copyText(){
+  const text=document.getElementById('copyArea').textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    showToast('toastCopy');
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=text;document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    showToast('toastCopy');
+  });
+}
+
+async function sendToSlack(){
+  const {text, gr, fs, cs, mn, year}=getSummaryText();
+  const btn=document.querySelector('.btn-slack');
+  btn.classList.add('sending');
+  btn.textContent='Enviando...';
+
+  const blocks=[
+    {type:'header',text:{type:'plain_text',text:'Calendario Tatiana - '+mn+' '+year}},
+    {type:'section',text:{type:'mrkdwn',text:'Tatiana acaba de enviar su calendario para *'+mn+' '+year+'*'}},
+    {type:'divider'}
+  ];
+  if(gr.full.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'*Full* ('+fs+')\n'+gr.full.join(', ')}});
+  if(gr.clases.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'*Clases* ('+cs+')\n'+gr.clases.join(', ')}});
+  if(gr.libre.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'*No trabaja*\n'+gr.libre.join(', ')}});
+  blocks.push({type:'context',elements:[{type:'mrkdwn',text:'Dias con clases: evitar reuniones a las '+g('clases-e1')+' y las '+g('clases-s2')+' (colectivos Malta)'}]});
+
+  try {
+    await fetch(WEBHOOK,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({blocks, text:'Calendario Tatiana '+mn+' '+year})
+    });
+    showToast('toastOk');
+  } catch(e){
+    showToast('toastErr');
+  }
+  btn.classList.remove('sending');
+  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.95 9.79 19.79 19.79 0 01.88 1.18 2 2 0 012.86 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg> Enviar a Daniel';
+}
+
+function showToast(id){
+  const t=document.getElementById(id);
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+document.getElementById('monthSel').addEventListener('change',buildCalendar);
+document.getElementById('yearSel').addEventListener('change',buildCalendar);
+buildCalendar();updateNoteHours();
+</script>
+</body>
+</html>
