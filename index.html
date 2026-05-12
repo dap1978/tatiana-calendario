@@ -299,6 +299,17 @@ async function sendToSlack(){
   btn.classList.add('sending');
   btn.textContent='Enviando...';
 
+  const calendarState={
+    month, year, mn,
+    clases,
+    fullSchedule: fs,
+    clasesBloque1: s1+' - '+e1,
+    clasesBloque2: s2+' - '+e2,
+    sentAt: new Date().toISOString()
+  };
+
+  const verUrl='https://tatiana-calendario.vercel.app/ver';
+
   const blocks=[
     {type:'header',text:{type:'plain_text',text:(isModification?'⚠️ MODIFICACIÓN — ':'📅 ')+'Tatiana — '+mn+' '+year}},
     {type:'divider'}
@@ -317,12 +328,13 @@ async function sendToSlack(){
   if(fullDays.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'✅ *Trabaja día completo* ('+fs+')\nDías: '+fullDays.join(', ')}});
   if(clases.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'🟡 *Trabaja parcial — tiene clases*\nBloque 1: '+s1+' - '+e1+'\nBloque 2: '+s2+' - '+e2+'\nDías: '+clases.join(', ')}});
   blocks.push({type:'context',elements:[{type:'mrkdwn',text:'⚠️ En días con clases: no agendar entre las '+e1+' y las '+s2+' (colectivos Malta impredecibles)'}]});
+  blocks.push({type:'section',text:{type:'mrkdwn',text:'*<'+verUrl+'|Ver calendario online →>*'}});
 
   try{
     const res=await fetch(WEBHOOK,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({blocks,text:(isModification?'⚠️ MODIFICACIÓN — ':'')+'Calendario Tatiana '+mn+' '+year})
+      body:JSON.stringify({blocks,text:(isModification?'⚠️ MODIFICACIÓN — ':'')+'Calendario Tatiana '+mn+' '+year,calendarState})
     });
     if(res.ok){
       saveState(month,year,clases);

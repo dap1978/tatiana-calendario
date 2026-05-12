@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendario Tatiana · Firmaway</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream:#FFFBF5;--cream-warm:#FEF1E0;--orange:#F15A2F;--orange-soft:#FDEEE9;
+    --ink:#31353D;--ink-light:rgba(49,53,61,0.45);--ink-faint:rgba(49,53,61,0.10);
+    --green:#1E6B45;--green-light:#D6F0E2;--green-mid:#7ECDA0;
+    --amber:#8A5C00;--amber-light:#FEF3C7;--amber-mid:#FCD34D;--gray-light:#ECEAE4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--cream);color:var(--ink);font-family:'Inter',system-ui,sans-serif;min-height:100vh;padding:36px 20px 60px;-webkit-font-smoothing:antialiased}
+  .app{max-width:860px;margin:0 auto}
+  .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid var(--ink-faint)}
+  .logo-text{font-size:20px;font-weight:700;letter-spacing:-0.03em;color:var(--ink)}
+  .logo-text span{color:var(--orange)}
+  .header-right{text-align:right}
+  .header-right h1{font-size:17px;font-weight:700;letter-spacing:-0.03em}
+  .header-right p{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-light);margin-top:2px}
+  .months-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  .month-card{background:var(--cream-warm);border:1.5px solid var(--ink);border-radius:14px;padding:20px 22px;box-shadow:4px 4px 0px 0px var(--ink)}
+  .month-title{font-size:15px;font-weight:700;letter-spacing:-0.02em;margin-bottom:4px}
+  .month-updated{font-size:11px;color:var(--ink-light);margin-bottom:16px}
+  .schedule-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .pill{font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;display:flex;align-items:center;gap:5px}
+  .pill-green{background:var(--green-light);color:var(--green);border:1px solid var(--green-mid)}
+  .pill-amber{background:var(--amber-light);color:var(--amber);border:1px solid var(--amber-mid)}
+  .cal-header{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px}
+  .cal-header span{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-light);text-align:center;padding:4px 0}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .day-cell{border-radius:6px;min-height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;border:1px solid transparent}
+  .day-cell.empty{background:transparent}
+  .day-cell.full{background:var(--green-light);border-color:var(--green-mid)}
+  .day-cell.clases{background:var(--amber-light);border-color:var(--amber-mid)}
+  .day-cell.weekend{background:var(--gray-light)}
+  .day-num{font-size:11px;font-weight:700;line-height:1}
+  .full .day-num{color:var(--green)}
+  .clases .day-num{color:var(--amber)}
+  .weekend .day-num{color:#A8A49D}
+  .day-dot{width:5px;height:5px;border-radius:50%;margin-top:3px;background:var(--amber-mid)}
+  .legend-row{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-light)}
+  .ldot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+  .note-box{font-size:11px;line-height:1.7;color:var(--ink);border-left:3px solid var(--orange);background:var(--orange-soft);border-radius:0 8px 8px 0;padding:8px 12px;margin-top:12px}
+  .empty-state{text-align:center;padding:60px 20px;color:var(--ink-light)}
+  .empty-state h2{font-size:18px;font-weight:700;margin-bottom:8px;color:var(--ink)}
+  .empty-state p{font-size:14px}
+  .loading{text-align:center;padding:60px 20px;color:var(--ink-light);font-size:14px}
+  @media(max-width:500px){.months-grid{grid-template-columns:1fr}.header{flex-direction:column;gap:10px}.header-right{text-align:left}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo-text">Firmaway<span>.</span></div>
+    <div class="header-right">
+      <h1>Calendario de Tatiana</h1>
+      <p>Vista actualizada &middot; Malta &rarr; Argentina</p>
+    </div>
+  </div>
+  <div id="root"><div class="loading">Cargando calendario...</div></div>
+</div>
+
+<script>
+const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function timeAgo(isoStr){
+  const diff=Math.floor((Date.now()-new Date(isoStr))/1000);
+  if(diff<60) return 'hace unos segundos';
+  if(diff<3600) return 'hace '+Math.floor(diff/60)+' min';
+  if(diff<86400) return 'hace '+Math.floor(diff/3600)+' hs';
+  return 'hace '+Math.floor(diff/86400)+' días';
+}
+
+function renderMonth(cal){
+  const {month, year, clases, fullSchedule, clasesBloque1, clasesBloque2, sentAt} = cal;
+  const days = new Date(year, month+1, 0).getDate();
+  let fd = new Date(year, month, 1).getDay(); fd = fd===0?6:fd-1;
+
+  let cells = '';
+  for(let i=0;i<fd;i++) cells+='<div class="day-cell empty"></div>';
+  for(let d=1;d<=days;d++){
+    const dow=new Date(year,month,d).getDay();
+    const isWE=dow===0||dow===6;
+    const isClases=clases.includes(d);
+    const cls=isWE?'weekend':isClases?'clases':'full';
+    cells+=`<div class="day-cell ${cls}"><span class="day-num">${d}</span>${isClases&&!isWE?'<div class="day-dot"></div>':''}</div>`;
+  }
+
+  const clasesDays = clases.filter(d=>{ const dow=new Date(year,month,d).getDay(); return dow!==0&&dow!==6; });
+
+  return `
+    <div class="month-card">
+      <div class="month-title">${MONTHS[month]} ${year}</div>
+      <div class="month-updated">Actualizado ${timeAgo(sentAt)}</div>
+      <div class="schedule-pills">
+        <div class="pill pill-green">✅ Día completo: ${fullSchedule}</div>
+        ${clasesDays.length?`<div class="pill pill-amber">🟡 Con clases: ${clasesBloque1} / ${clasesBloque2}</div>`:''}
+      </div>
+      <div class="cal-header">
+        <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+      </div>
+      <div class="cal-grid">${cells}</div>
+      ${clasesDays.length?`<div class="note-box">⚠️ Días con clases (${clasesDays.join(', ')}): no agendar entre las ${clasesBloque1.split('-')[1].trim()} y las ${clasesBloque2.split('-')[0].trim()}</div>`:''}
+      <div class="legend-row">
+        <div class="legend-item"><div class="ldot" style="background:var(--green-mid)"></div> Día completo</div>
+        <div class="legend-item"><div class="ldot" style="background:var(--amber-mid)"></div> Tiene clases</div>
+        <div class="legend-item"><div class="ldot" style="background:var(--gray-light)"></div> Fin de semana</div>
+      </div>
+    </div>`;
+}
+
+async function load(){
+  const root=document.getElementById('root');
+  try{
+    const res=await fetch('/api/calendar');
+    const calendars=await res.json();
+    if(!calendars||calendars.length===0){
+      root.innerHTML=`<div class="empty-state"><h2>Sin calendarios todavía</h2><p>Tatiana aún no envió ningún calendario este mes.</p></div>`;
+      return;
+    }
+    root.innerHTML=`<div class="months-grid">${calendars.map(renderMonth).join('')}</div>`;
+  }catch(e){
+    root.innerHTML=`<div class="empty-state"><h2>Error al cargar</h2><p>Intentá recargar la página.</p></div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>
