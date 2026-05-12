@@ -37,30 +37,22 @@
   .time-row input[type=time]:focus{border-color:var(--orange)}
   .time-sep{font-size:12px;color:var(--ink-light)}
   .bloque-lbl{font-size:10px;color:var(--ink-light);font-weight:500;width:100%}
-  .legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-  .legend-btn{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--ink);cursor:pointer;padding:6px 12px;border-radius:999px;border:1.5px solid var(--ink-faint);background:var(--cream);transition:all 0.12s;user-select:none}
-  .legend-btn:hover{border-color:var(--ink)}
-  .legend-btn.active-full{background:var(--green-light);border-color:var(--green-mid);color:var(--green)}
-  .legend-btn.active-clases{background:var(--amber-light);border-color:var(--amber-mid);color:var(--amber)}
-  .legend-btn.active-libre{background:var(--gray-light);border-color:#C5C2BB;color:var(--ink-light)}
-  .ldot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+  .cal-hint{font-size:12px;color:var(--ink-light);margin-bottom:14px}
+  .cal-hint strong{color:var(--amber);font-weight:600}
   .cal-header{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
   .cal-header span{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-light);text-align:center;padding:5px 0}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
   .day-cell{border-radius:8px;min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:8px 3px 6px;cursor:pointer;border:1.5px solid transparent;transition:transform 0.1s;user-select:none}
-  .day-cell:not(.empty):not(.state-libre):hover{transform:translateY(-1px)}
+  .day-cell:not(.empty):not(.state-weekend):hover{transform:translateY(-1px)}
   .day-cell.empty{background:transparent;cursor:default;pointer-events:none}
-  .day-cell.state-none{background:var(--cream);border-color:var(--ink-faint)}
   .day-cell.state-full{background:var(--green-light);border-color:var(--green-mid)}
   .day-cell.state-clases{background:var(--amber-light);border-color:var(--amber-mid)}
-  .day-cell.state-libre{background:var(--gray-light);border-color:transparent;cursor:default}
+  .day-cell.state-weekend{background:var(--gray-light);border-color:transparent;cursor:default;pointer-events:none}
   .day-num{font-size:13px;font-weight:700;line-height:1;margin-bottom:5px}
-  .state-none .day-num{color:var(--ink-light)}
   .state-full .day-num{color:var(--green)}
   .state-clases .day-num{color:var(--amber)}
-  .state-libre .day-num{color:#A8A49D}
+  .state-weekend .day-num{color:#A8A49D}
   .day-tag{font-size:8px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;border-radius:3px;padding:2px 4px;line-height:1.4;text-align:center}
-  .state-full .day-tag{background:var(--green-mid);color:var(--green)}
   .state-clases .day-tag{background:var(--amber-mid);color:var(--amber)}
   .note{font-size:12px;line-height:1.7;color:var(--ink);border-left:3px solid var(--orange);background:var(--orange-soft);border-radius:0 8px 8px 0;padding:10px 14px;margin-top:14px}
   .reset-link{font-size:12px;color:var(--ink-light);cursor:pointer;text-decoration:underline;text-underline-offset:3px;margin-top:10px;display:inline-block}
@@ -74,7 +66,6 @@
   .badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;border-radius:4px;padding:2px 7px}
   .badge-green{background:var(--green-light);color:var(--green)}
   .badge-amber{background:var(--amber-light);color:var(--amber)}
-  .badge-gray{background:var(--gray-light);color:var(--ink-light)}
   .copy-area{background:var(--cream);border:1.5px solid var(--ink-faint);border-radius:8px;padding:14px 16px;font-family:'Inter',monospace;font-size:12px;line-height:1.9;color:var(--ink);white-space:pre-wrap}
   .btn-row{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
   .btn{display:inline-flex;align-items:center;gap:6px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:10px 20px;cursor:pointer;transition:opacity 0.15s,transform 0.12s}
@@ -113,7 +104,7 @@
         <option value="8">Septiembre</option><option value="9">Octubre</option>
         <option value="10">Noviembre</option><option value="11">Diciembre</option>
       </select>
-      <input type="number" id="yearSel" value="2025" min="2024" max="2030">
+      <input type="number" id="yearSel" value="2026" min="2024" max="2030">
     </div>
   </div>
 
@@ -121,7 +112,7 @@
     <div class="card-label">02 &middot; Horarios (editables)</div>
     <div class="schedules-grid">
       <div class="sched-item">
-        <div class="sched-label"><div class="sdot" style="background:var(--green-mid)"></div> D&iacute;a full</div>
+        <div class="sched-label"><div class="sdot" style="background:var(--green-mid)"></div> D&iacute;a completo</div>
         <div class="time-row">
           <input type="time" id="full-start" value="09:00">
           <span class="time-sep">&ndash;</span>
@@ -147,25 +138,15 @@
   </div>
 
   <div class="card card-orange">
-    <div class="card-label">03 &middot; Marc&aacute; los d&iacute;as</div>
-    <div class="legend">
-      <div class="legend-btn active-full" id="btn-full" onclick="setMode('full')">
-        <div class="ldot" style="background:var(--green-mid)"></div> Full
-      </div>
-      <div class="legend-btn" id="btn-clases" onclick="setMode('clases')">
-        <div class="ldot" style="background:var(--amber-mid)"></div> Clases
-      </div>
-      <div class="legend-btn" id="btn-libre" onclick="setMode('libre')">
-        <div class="ldot" style="background:#C5C2BB"></div> No trabaja
-      </div>
-    </div>
+    <div class="card-label">03 &middot; Marc&aacute; los d&iacute;as con clases</div>
+    <p class="cal-hint">Todos los d&iacute;as laborables son <strong style="color:var(--green)">d&iacute;a completo</strong> por defecto. Hac&eacute; click en los que tienen <strong>clases</strong> para marcarlos.</p>
     <div class="cal-header">
       <span>Lun</span><span>Mar</span><span>Mi&eacute;</span>
       <span>Jue</span><span>Vie</span><span>S&aacute;b</span><span>Dom</span>
     </div>
     <div class="cal-grid" id="calGrid"></div>
     <div class="note">
-      <strong>Record&aacute;:</strong> d&iacute;as con clases &rarr; no agendar exactamente a las <strong id="note-e1">11:30</strong> ni a las <strong id="note-s2">16:00</strong> (colectivos impredecibles en Malta).
+      <strong>Record&aacute;:</strong> en d&iacute;as con clases no agendar entre las <strong id="note-e1">11:30</strong> y las <strong id="note-s2">16:00</strong> (colectivos impredecibles en Malta).
     </div>
     <span class="reset-link" onclick="resetAll()">&#8635; Limpiar todo</span>
   </div>
@@ -176,7 +157,7 @@
     <div class="copy-area" id="copyArea"></div>
     <div class="btn-row">
       <button class="btn btn-ghost" onclick="copyText()">Copiar texto</button>
-      <button class="btn btn-slack" onclick="sendToSlack()">
+      <button class="btn btn-slack" id="btnSlack" onclick="sendToSlack()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.95 9.79 19.79 19.79 0 01.88 1.18 2 2 0 012.86 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg>
         Enviar a Daniel
       </button>
@@ -190,7 +171,7 @@
 <script>
 const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const WEBHOOK='/api/slack';
-let mode='full', dayStates={};
+let dayStates={};
 const g=id=>document.getElementById(id).value;
 
 function updateNoteHours(){
@@ -200,13 +181,6 @@ function updateNoteHours(){
 ['full-start','full-end','clases-s1','clases-e1','clases-s2','clases-e2'].forEach(id=>{
   document.getElementById(id).addEventListener('change',()=>{updateNoteHours();updateSummary();});
 });
-
-function setMode(m){
-  mode=m;
-  ['full','clases','libre'].forEach(x=>{
-    document.getElementById('btn-'+x).className='legend-btn'+(x===m?' active-'+x:'');
-  });
-}
 
 function buildCalendar(){
   const month=+g('monthSel'),year=+g('yearSel');
@@ -218,7 +192,7 @@ function buildCalendar(){
   for(let d=1;d<=days;d++){
     const dow=new Date(year,month,d).getDay();
     const isWE=dow===0||dow===6;
-    dayStates[d]=isWE?'libre':'none';
+    dayStates[d]=isWE?'weekend':'full';
     const cell=document.createElement('div');
     cell.id='day-'+d;
     renderCell(cell,d);
@@ -231,12 +205,12 @@ function buildCalendar(){
 function renderCell(cell,d){
   const s=dayStates[d];
   cell.className='day-cell state-'+s;
-  const tag=s==='full'?'<span class="day-tag">Full</span>':s==='clases'?'<span class="day-tag">Clases</span>':'';
+  const tag=s==='clases'?'<span class="day-tag">Clases</span>':'';
   cell.innerHTML='<span class="day-num">'+d+'</span>'+tag;
 }
 
 function clickDay(d){
-  dayStates[d]=mode;
+  dayStates[d]=dayStates[d]==='clases'?'full':'clases';
   renderCell(document.getElementById('day-'+d),d);
   updateSummary();
 }
@@ -246,55 +220,43 @@ function resetAll(){
   const days=new Date(year,month+1,0).getDate();
   for(let d=1;d<=days;d++){
     const dow=new Date(year,month,d).getDay();
-    dayStates[d]=(dow===0||dow===6)?'libre':'none';
+    dayStates[d]=(dow===0||dow===6)?'weekend':'full';
     const c=document.getElementById('day-'+d);if(c)renderCell(c,d);
   }
   updateSummary();
 }
 
-function getSummaryText(){
-  const month=+g('monthSel'),year=+g('yearSel');
-  const days=new Date(year,month+1,0).getDate();
-  const gr={full:[],clases:[],libre:[]};
-  for(let d=1;d<=days;d++){const s=dayStates[d];if(s&&s!=='none'&&gr[s])gr[s].push(d);}
-  const fs=g('full-start')+' - '+g('full-end');
-  const cs=g('clases-s1')+'-'+g('clases-e1')+' / '+g('clases-s2')+'-'+g('clases-e2');
-  const mn=MONTHS[month];
-  const lines=[
-    'Tatiana - Horarios '+mn+' '+year,'',
-    ...(gr.full.length?['FULL ('+fs+'): '+gr.full.join(', ')]:[]),
-    ...(gr.clases.length?['CLASES ('+cs+'): '+gr.clases.join(', ')]:[]),
-    ...(gr.libre.length?['NO TRABAJA: '+gr.libre.join(', ')]:[]),
-    '','Dias con clases: evitar reuniones exactamente a las '+g('clases-e1')+' y las '+g('clases-s2')+'.'
-  ];
-  return {text:lines.join('\n'), gr, fs, cs, mn, year};
+function getClasesDays(){
+  return Object.keys(dayStates).map(Number).filter(d=>dayStates[d]==='clases').sort((a,b)=>a-b);
 }
 
 function updateSummary(){
   const month=+g('monthSel'),year=+g('yearSel');
-  const days=new Date(year,month+1,0).getDate();
-  const gr={full:[],clases:[],libre:[]};
-  for(let d=1;d<=days;d++){const s=dayStates[d];if(s&&s!=='none'&&gr[s])gr[s].push(d);}
-  const hasData=gr.full.length>0||gr.clases.length>0;
+  const clases=getClasesDays();
+  const fullDays=Object.keys(dayStates).map(Number).filter(d=>dayStates[d]==='full').sort((a,b)=>a-b);
   const card=document.getElementById('summaryCard');
-  if(!hasData){card.classList.remove('visible');return;}
+  if(fullDays.length===0&&clases.length===0){card.classList.remove('visible');return;}
   card.classList.add('visible');
   const fs=g('full-start')+' - '+g('full-end');
-  const cs=g('clases-s1')+'-'+g('clases-e1')+' / '+g('clases-s2')+'-'+g('clases-e2');
+  const s1=g('clases-s1'),e1=g('clases-e1'),s2=g('clases-s2'),e2=g('clases-e2');
   document.getElementById('summaryTable').innerHTML=
-    '<thead><tr><th>Estado</th><th>Dias</th><th>Horario (hora ARG)</th></tr></thead><tbody>'+
-    (gr.full.length?'<tr><td><span class="badge badge-green">Full</span></td><td>'+gr.full.join(', ')+'</td><td>'+fs+'</td></tr>':'')+
-    (gr.clases.length?'<tr><td><span class="badge badge-amber">Clases</span></td><td>'+gr.clases.join(', ')+'</td><td>'+cs+'</td></tr>':'')+
-    (gr.libre.length?'<tr><td><span class="badge badge-gray">Libre</span></td><td>'+gr.libre.join(', ')+'</td><td>-</td></tr>':'')+
+    '<thead><tr><th>Estado</th><th>D&iacute;as</th><th>Horario (hora ARG)</th></tr></thead><tbody>'+
+    (fullDays.length?'<tr><td><span class="badge badge-green">Completo</span></td><td>'+fullDays.join(', ')+'</td><td>'+fs+'</td></tr>':'')+
+    (clases.length?'<tr><td><span class="badge badge-amber">Clases</span></td><td>'+clases.join(', ')+'</td><td>'+s1+'-'+e1+' / '+s2+'-'+e2+'</td></tr>':'')+
     '</tbody>';
-  document.getElementById('copyArea').textContent=getSummaryText().text;
+  const lines=[
+    'Tatiana — Horarios '+MONTHS[month]+' '+year,'',
+    'Trabaja día completo ('+fs+'): '+fullDays.join(', '),
+    ...(clases.length?['Tiene clases ('+s1+'-'+e1+' / '+s2+'-'+e2+'): '+clases.join(', ')]:[]),
+    '',
+    'En días con clases: no agendar entre las '+e1+' y las '+s2+' (colectivos Malta).'
+  ];
+  document.getElementById('copyArea').textContent=lines.join('\n');
 }
 
 function copyText(){
   const text=document.getElementById('copyArea').textContent;
-  navigator.clipboard.writeText(text).then(()=>{
-    showToast('toastCopy');
-  }).catch(()=>{
+  navigator.clipboard.writeText(text).then(()=>showToast('toastCopy')).catch(()=>{
     const ta=document.createElement('textarea');
     ta.value=text;document.body.appendChild(ta);ta.select();
     document.execCommand('copy');document.body.removeChild(ta);
@@ -302,44 +264,77 @@ function copyText(){
   });
 }
 
-function sentKey(month, year){ return 'sent_'+year+'_'+month; }
+function storageKey(month,year){return'cal_'+year+'_'+month;}
 
-function wasAlreadySent(month, year){ return !!localStorage.getItem(sentKey(month, year)); }
+function loadPrevState(month,year){
+  try{return JSON.parse(localStorage.getItem(storageKey(month,year)))||null;}
+  catch{return null;}
+}
 
-function markAsSent(month, year){ localStorage.setItem(sentKey(month, year), new Date().toISOString()); }
+function saveState(month,year,clases){
+  localStorage.setItem(storageKey(month,year),JSON.stringify({clases,ts:new Date().toISOString()}));
+}
+
+function computeDiff(prevClases,newClases){
+  const added=newClases.filter(d=>!prevClases.includes(d));
+  const removed=prevClases.filter(d=>!newClases.includes(d));
+  return{added,removed};
+}
+
+const SLACK_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.95 9.79 19.79 19.79 0 01.88 1.18 2 2 0 012.86 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg>';
 
 async function sendToSlack(){
-  const {text, gr, fs, cs, mn, year}=getSummaryText();
-  const month=+g('monthSel');
-  const isModification=wasAlreadySent(month, year);
-  const btn=document.querySelector('.btn-slack');
+  const month=+g('monthSel'),year=+g('yearSel');
+  const mn=MONTHS[month];
+  const clases=getClasesDays();
+  const fullDays=Object.keys(dayStates).map(Number).filter(d=>dayStates[d]==='full').sort((a,b)=>a-b);
+  const fs=g('full-start')+' - '+g('full-end');
+  const s1=g('clases-s1'),e1=g('clases-e1'),s2=g('clases-s2'),e2=g('clases-e2');
+
+  const prev=loadPrevState(month,year);
+  const isModification=prev!==null;
+  const diff=isModification?computeDiff(prev.clases,clases):null;
+
+  const btn=document.getElementById('btnSlack');
   btn.classList.add('sending');
   btn.textContent='Enviando...';
 
-  const s1=g('clases-s1'),e1=g('clases-e1'),s2=g('clases-s2'),e2=g('clases-e2');
-  const headerText=(isModification?'⚠️ MODIFICACIÓN — ':'📅 ')+'Tatiana — '+mn+' '+year;
   const blocks=[
-    {type:'header',text:{type:'plain_text',text:headerText}},
-    ...(isModification?[{type:'section',text:{type:'mrkdwn',text:'_Tatiana actualizó su calendario para *'+mn+' '+year+'*. Este mensaje reemplaza el anterior._'}}]:[]),
+    {type:'header',text:{type:'plain_text',text:(isModification?'⚠️ MODIFICACIÓN — ':'📅 ')+'Tatiana — '+mn+' '+year}},
     {type:'divider'}
   ];
-  if(gr.full.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'✅ *Trabaja día completo* ('+fs+')\nDías: '+gr.full.join(', ')}});
-  if(gr.clases.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'🟡 *Trabaja parcial — tiene clases*\nBloque 1: '+s1+' - '+e1+'\nBloque 2: '+s2+' - '+e2+'\nDías: '+gr.clases.join(', ')}});
+
+  if(isModification&&diff){
+    const changes=[];
+    diff.added.forEach(d=>changes.push('• Día '+d+': pasó a *parcial* (tiene clases)'));
+    diff.removed.forEach(d=>changes.push('• Día '+d+': pasó a *día completo*'));
+    if(changes.length){
+      blocks.push({type:'section',text:{type:'mrkdwn',text:'*Cambios respecto al envío anterior:*\n'+changes.join('\n')}});
+      blocks.push({type:'divider'});
+    }
+  }
+
+  if(fullDays.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'✅ *Trabaja día completo* ('+fs+')\nDías: '+fullDays.join(', ')}});
+  if(clases.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'🟡 *Trabaja parcial — tiene clases*\nBloque 1: '+s1+' - '+e1+'\nBloque 2: '+s2+' - '+e2+'\nDías: '+clases.join(', ')}});
   blocks.push({type:'context',elements:[{type:'mrkdwn',text:'⚠️ En días con clases: no agendar entre las '+e1+' y las '+s2+' (colectivos Malta impredecibles)'}]});
 
-  try {
+  try{
     const res=await fetch(WEBHOOK,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({blocks, text:(isModification?'⚠️ MODIFICACIÓN — ':'')+'Calendario Tatiana '+mn+' '+year})
+      body:JSON.stringify({blocks,text:(isModification?'⚠️ MODIFICACIÓN — ':'')+'Calendario Tatiana '+mn+' '+year})
     });
-    if(res.ok){ markAsSent(month, year); showToast('toastOk'); }
-    else showToast('toastErr');
-  } catch(e){
+    if(res.ok){
+      saveState(month,year,clases);
+      showToast('toastOk');
+    } else {
+      showToast('toastErr');
+    }
+  }catch(e){
     showToast('toastErr');
   }
   btn.classList.remove('sending');
-  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.95 9.79 19.79 19.79 0 01.88 1.18 2 2 0 012.86 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg> Enviar a Daniel';
+  btn.innerHTML=SLACK_ICON+' Enviar a Daniel';
 }
 
 function showToast(id){
