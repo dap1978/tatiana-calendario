@@ -308,15 +308,14 @@ async function sendToSlack(){
   btn.classList.add('sending');
   btn.textContent='Enviando...';
 
+  const s1=g('clases-s1'),e1=g('clases-e1'),s2=g('clases-s2'),e2=g('clases-e2');
   const blocks=[
-    {type:'header',text:{type:'plain_text',text:'Calendario Tatiana - '+mn+' '+year}},
-    {type:'section',text:{type:'mrkdwn',text:'Tatiana acaba de enviar su calendario para *'+mn+' '+year+'*'}},
+    {type:'header',text:{type:'plain_text',text:'📅 Tatiana — '+mn+' '+year}},
     {type:'divider'}
   ];
-  if(gr.full.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'*Full* ('+fs+')\n'+gr.full.join(', ')}});
-  if(gr.clases.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'*Clases* ('+cs+')\n'+gr.clases.join(', ')}});
-  if(gr.libre.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'*No trabaja*\n'+gr.libre.join(', ')}});
-  blocks.push({type:'context',elements:[{type:'mrkdwn',text:'Dias con clases: evitar reuniones a las '+g('clases-e1')+' y las '+g('clases-s2')+' (colectivos Malta)'}]});
+  if(gr.full.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'✅ *Trabaja día completo* ('+fs+')\nDías: '+gr.full.join(', ')}});
+  if(gr.clases.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'🟡 *Trabaja parcial — tiene clases*\nBloque 1: '+s1+' - '+e1+'\nBloque 2: '+s2+' - '+e2+'\nDías: '+gr.clases.join(', ')}});
+  blocks.push({type:'context',elements:[{type:'mrkdwn',text:'⚠️ En días con clases: no agendar entre las '+e1+' y las '+s2+' (colectivos Malta impredecibles)'}]});
 
   try {
     await fetch(WEBHOOK,{
