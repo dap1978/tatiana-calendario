@@ -302,15 +302,25 @@ function copyText(){
   });
 }
 
+function sentKey(month, year){ return 'sent_'+year+'_'+month; }
+
+function wasAlreadySent(month, year){ return !!localStorage.getItem(sentKey(month, year)); }
+
+function markAsSent(month, year){ localStorage.setItem(sentKey(month, year), new Date().toISOString()); }
+
 async function sendToSlack(){
   const {text, gr, fs, cs, mn, year}=getSummaryText();
+  const month=+g('monthSel');
+  const isModification=wasAlreadySent(month, year);
   const btn=document.querySelector('.btn-slack');
   btn.classList.add('sending');
   btn.textContent='Enviando...';
 
   const s1=g('clases-s1'),e1=g('clases-e1'),s2=g('clases-s2'),e2=g('clases-e2');
+  const headerText=(isModification?'⚠️ MODIFICACIÓN — ':'📅 ')+'Tatiana — '+mn+' '+year;
   const blocks=[
-    {type:'header',text:{type:'plain_text',text:'📅 Tatiana — '+mn+' '+year}},
+    {type:'header',text:{type:'plain_text',text:headerText}},
+    ...(isModification?[{type:'section',text:{type:'mrkdwn',text:'_Tatiana actualizó su calendario para *'+mn+' '+year+'*. Este mensaje reemplaza el anterior._'}}]:[]),
     {type:'divider'}
   ];
   if(gr.full.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'✅ *Trabaja día completo* ('+fs+')\nDías: '+gr.full.join(', ')}});
@@ -318,12 +328,13 @@ async function sendToSlack(){
   blocks.push({type:'context',elements:[{type:'mrkdwn',text:'⚠️ En días con clases: no agendar entre las '+e1+' y las '+s2+' (colectivos Malta impredecibles)'}]});
 
   try {
-    await fetch(WEBHOOK,{
+    const res=await fetch(WEBHOOK,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({blocks, text:'Calendario Tatiana '+mn+' '+year})
+      body:JSON.stringify({blocks, text:(isModification?'⚠️ MODIFICACIÓN — ':'')+'Calendario Tatiana '+mn+' '+year})
     });
-    showToast('toastOk');
+    if(res.ok){ markAsSent(month, year); showToast('toastOk'); }
+    else showToast('toastErr');
   } catch(e){
     showToast('toastErr');
   }
