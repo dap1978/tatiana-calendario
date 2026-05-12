@@ -80,6 +80,8 @@
   .toast-slack-ok{color:var(--green);background:var(--green-light)}
   .toast-slack-err{color:#B91C1C;background:#FEE2E2}
   .sending{opacity:0.6;pointer-events:none}
+  .btn-nav{background:var(--cream);border:1.5px solid var(--ink);border-radius:8px;font-size:16px;font-weight:700;padding:6px 14px;cursor:pointer;color:var(--ink);transition:background 0.12s}
+  .btn-nav:hover{background:var(--cream-warm)}
   @media(max-width:500px){.card{padding:16px}.schedules-grid{grid-template-columns:1fr}.day-cell{min-height:54px}.day-num{font-size:11px}.header{flex-direction:column;gap:10px}.header-right{text-align:left}}
 </style>
 </head>
@@ -96,15 +98,9 @@
   <div class="card">
     <div class="card-label">01 &middot; Mes y a&ntilde;o</div>
     <div class="month-row">
-      <select id="monthSel">
-        <option value="0">Enero</option><option value="1">Febrero</option>
-        <option value="2">Marzo</option><option value="3">Abril</option>
-        <option value="4" selected>Mayo</option><option value="5">Junio</option>
-        <option value="6">Julio</option><option value="7">Agosto</option>
-        <option value="8">Septiembre</option><option value="9">Octubre</option>
-        <option value="10">Noviembre</option><option value="11">Diciembre</option>
-      </select>
-      <input type="number" id="yearSel" value="2026" min="2024" max="2030">
+      <button class="btn-nav" onclick="changeMonth(-1)">&#8592;</button>
+      <span id="monthDisplay" style="font-size:16px;font-weight:700;letter-spacing:-0.02em;min-width:130px;text-align:center"></span>
+      <button class="btn-nav" onclick="changeMonth(1)">&#8594;</button>
     </div>
   </div>
 
@@ -172,6 +168,9 @@
 const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const WEBHOOK='/api/slack';
 let dayStates={};
+let monthStates={};
+const now=new Date();
+let currentMonth=now.getMonth(), currentYear=now.getFullYear();
 const g=id=>document.getElementById(id).value;
 
 function updateNoteHours(){
@@ -182,8 +181,18 @@ function updateNoteHours(){
   document.getElementById(id).addEventListener('change',()=>{updateNoteHours();updateSummary();});
 });
 
+function changeMonth(dir){
+  monthStates[currentYear+'_'+currentMonth]=Object.assign({},dayStates);
+  currentMonth+=dir;
+  if(currentMonth>11){currentMonth=0;currentYear++;}
+  if(currentMonth<0){currentMonth=11;currentYear--;}
+  buildCalendar();
+}
+
 function buildCalendar(){
-  const month=+g('monthSel'),year=+g('yearSel');
+  const month=currentMonth, year=currentYear;
+  document.getElementById('monthDisplay').textContent=MONTHS[month]+' '+year;
+  const saved=monthStates[year+'_'+month]||null;
   const days=new Date(year,month+1,0).getDate();
   let fd=new Date(year,month,1).getDay();fd=fd===0?6:fd-1;
   const grid=document.getElementById('calGrid');
@@ -192,7 +201,7 @@ function buildCalendar(){
   for(let d=1;d<=days;d++){
     const dow=new Date(year,month,d).getDay();
     const isWE=dow===0||dow===6;
-    dayStates[d]=isWE?'weekend':'full';
+    dayStates[d]=saved?saved[d]:(isWE?'weekend':'full');
     const cell=document.createElement('div');
     cell.id='day-'+d;
     renderCell(cell,d);
@@ -216,7 +225,8 @@ function clickDay(d){
 }
 
 function resetAll(){
-  const month=+g('monthSel'),year=+g('yearSel');
+  const month=currentMonth, year=currentYear;
+  delete monthStates[year+'_'+month];
   const days=new Date(year,month+1,0).getDate();
   for(let d=1;d<=days;d++){
     const dow=new Date(year,month,d).getDay();
@@ -231,7 +241,7 @@ function getClasesDays(){
 }
 
 function updateSummary(){
-  const month=+g('monthSel'),year=+g('yearSel');
+  const month=currentMonth, year=currentYear;
   const clases=getClasesDays();
   const fullDays=Object.keys(dayStates).map(Number).filter(d=>dayStates[d]==='full').sort((a,b)=>a-b);
   const card=document.getElementById('summaryCard');
@@ -284,7 +294,7 @@ function computeDiff(prevClases,newClases){
 const SLACK_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.95 9.79 19.79 19.79 0 01.88 1.18 2 2 0 012.86 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg>';
 
 async function sendToSlack(){
-  const month=+g('monthSel'),year=+g('yearSel');
+  const month=currentMonth, year=currentYear;
   const mn=MONTHS[month];
   const clases=getClasesDays();
   const fullDays=Object.keys(dayStates).map(Number).filter(d=>dayStates[d]==='full').sort((a,b)=>a-b);
@@ -355,8 +365,6 @@ function showToast(id){
   setTimeout(()=>t.classList.remove('show'),3000);
 }
 
-document.getElementById('monthSel').addEventListener('change',buildCalendar);
-document.getElementById('yearSel').addEventListener('change',buildCalendar);
 buildCalendar();updateNoteHours();
 </script>
 </body>
