@@ -41,6 +41,8 @@
   .full .day-num{color:var(--green)}
   .clases .day-num{color:var(--amber)}
   .weekend .day-num{color:#A8A49D}
+  .day-hrs{font-size:7px;line-height:1.25;font-weight:600;color:var(--amber);margin-top:2px;text-align:center}
+  .day-cell{min-height:44px}
   .day-dot{width:5px;height:5px;border-radius:50%;margin-top:3px;background:var(--amber-mid)}
   .legend-row{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap}
   .legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-light)}
@@ -78,6 +80,14 @@ function timeAgo(isoStr){
 
 function renderMonth(cal){
   const {month, year, clases, fullSchedule, clasesBloque1, clasesBloque2, sentAt} = cal;
+  const detalle = cal.clasesDetalle || null;
+  const hrs = h => h.s1+'-'+h.e1+(h.s2&&h.e2?' / '+h.s2+'-'+h.e2:'');
+  const groups = {};
+  if(detalle) Object.keys(detalle).map(Number).sort((a,b)=>a-b).forEach(d=>{
+    const k=hrs(detalle[d]);
+    (groups[k]=groups[k]||{hours:k,h:detalle[d],days:[]}).days.push(d);
+  });
+  const groupList = Object.values(groups).sort((a,b)=>a.days[0]-b.days[0]);
   const days = new Date(year, month+1, 0).getDate();
   let fd = new Date(year, month, 1).getDay(); fd = fd===0?6:fd-1;
 
@@ -88,7 +98,9 @@ function renderMonth(cal){
     const isWE=dow===0||dow===6;
     const isClases=clases.includes(d);
     const cls=isWE?'weekend':isClases?'clases':'full';
-    cells+=`<div class="day-cell ${cls}"><span class="day-num">${d}</span>${isClases&&!isWE?'<div class="day-dot"></div>':''}</div>`;
+    const dh = detalle && detalle[d];
+    const mark = isClases&&!isWE ? (dh ? `<div class="day-hrs">${dh.s1}-${dh.e1}${dh.s2&&dh.e2?'<br>'+dh.s2+'-'+dh.e2:''}</div>` : '<div class="day-dot"></div>') : '';
+    cells+=`<div class="day-cell ${cls}"><span class="day-num">${d}</span>${mark}</div>`;
   }
 
   const clasesDays = clases.filter(d=>{ const dow=new Date(year,month,d).getDay(); return dow!==0&&dow!==6; });
@@ -99,13 +111,13 @@ function renderMonth(cal){
       <div class="month-updated">Actualizado ${timeAgo(sentAt)}</div>
       <div class="schedule-pills">
         <div class="pill pill-green">✅ Día completo: ${fullSchedule}</div>
-        ${clasesDays.length?`<div class="pill pill-amber">🟡 Con clases: ${clasesBloque1} / ${clasesBloque2}</div>`:''}
+        ${detalle ? groupList.map(gr=>`<div class="pill pill-amber">🟡 Clases ${gr.hours}: días ${gr.days.join(', ')}</div>`).join('') : (clasesDays.length?`<div class="pill pill-amber">🟡 Con clases: ${clasesBloque1} / ${clasesBloque2}</div>`:'')}
       </div>
       <div class="cal-header">
         <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
       </div>
       <div class="cal-grid">${cells}</div>
-      ${clasesDays.length?`<div class="note-box">⚠️ Días con clases (${clasesDays.join(', ')}): no agendar entre las ${clasesBloque1.split('-')[1].trim()} y las ${clasesBloque2.split('-')[0].trim()}</div>`:''}
+      ${detalle ? groupList.filter(gr=>gr.h.e1&&gr.h.s2&&gr.h.e2).map(gr=>`<div class="note-box">⚠️ Días ${gr.days.join(', ')}: no agendar entre las ${gr.h.e1} y las ${gr.h.s2}</div>`).join('') : (clasesDays.length&&clasesBloque2?`<div class="note-box">⚠️ Días con clases (${clasesDays.join(', ')}): no agendar entre las ${clasesBloque1.split('-')[1].trim()} y las ${clasesBloque2.split('-')[0].trim()}</div>`:'')}
       <div class="legend-row">
         <div class="legend-item"><div class="ldot" style="background:var(--green-mid)"></div> Día completo</div>
         <div class="legend-item"><div class="ldot" style="background:var(--amber-mid)"></div> Tiene clases</div>

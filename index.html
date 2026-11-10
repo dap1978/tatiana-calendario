@@ -54,6 +54,14 @@
   .state-weekend .day-num{color:#A8A49D}
   .day-tag{font-size:8px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;border-radius:3px;padding:2px 4px;line-height:1.4;text-align:center}
   .state-clases .day-tag{background:var(--amber-mid);color:var(--amber)}
+  .day-hrs{font-size:8px;line-height:1.3;font-weight:600;color:var(--amber);margin-top:3px;text-align:center}
+  .day-cell.selected{outline:2px solid var(--orange);outline-offset:1px}
+  .day-editor{display:none;background:var(--cream);border:1.5px solid var(--amber-mid);border-radius:10px;padding:14px 16px;margin-top:14px}
+  .day-editor.visible{display:block}
+  .day-editor .time-row{margin-bottom:8px}
+  .editor-title{font-size:13px;font-weight:700;margin-bottom:10px;color:var(--amber)}
+  .editor-actions{display:flex;gap:18px;flex-wrap:wrap}
+  .editor-actions .reset-link{margin-top:4px}
   .note{font-size:12px;line-height:1.7;color:var(--ink);border-left:3px solid var(--orange);background:var(--orange-soft);border-radius:0 8px 8px 0;padding:10px 14px;margin-top:14px}
   .reset-link{font-size:12px;color:var(--ink-light);cursor:pointer;text-decoration:underline;text-underline-offset:3px;margin-top:10px;display:inline-block}
   .reset-link:hover{color:var(--orange)}
@@ -105,7 +113,7 @@
   </div>
 
   <div class="card">
-    <div class="card-label">02 &middot; Horarios (editables)</div>
+    <div class="card-label">02 &middot; Horarios habituales (editables)</div>
     <div class="schedules-grid">
       <div class="sched-item">
         <div class="sched-label"><div class="sdot" style="background:var(--green-mid)"></div> D&iacute;a completo</div>
@@ -116,7 +124,7 @@
         </div>
       </div>
       <div class="sched-item">
-        <div class="sched-label"><div class="sdot" style="background:var(--amber-mid)"></div> D&iacute;a con clases</div>
+        <div class="sched-label"><div class="sdot" style="background:var(--amber-mid)"></div> D&iacute;a con clases (valor inicial)</div>
         <div class="time-row">
           <input type="time" id="clases-s1" value="08:00">
           <span class="time-sep">&ndash;</span>
@@ -127,7 +135,7 @@
           <input type="time" id="clases-s2" value="16:00">
           <span class="time-sep">&ndash;</span>
           <input type="time" id="clases-e2" value="19:00">
-          <span class="bloque-lbl">Bloque 2</span>
+          <span class="bloque-lbl">Bloque 2 (opcional)</span>
         </div>
       </div>
     </div>
@@ -135,14 +143,27 @@
 
   <div class="card card-orange">
     <div class="card-label">03 &middot; Marc&aacute; los d&iacute;as con clases</div>
-    <p class="cal-hint">Todos los d&iacute;as laborables son <strong style="color:var(--green)">d&iacute;a completo</strong> por defecto. Hac&eacute; click en los que tienen <strong>clases</strong> para marcarlos.</p>
+    <p class="cal-hint">Todos los d&iacute;as laborables son <strong style="color:var(--green)">d&iacute;a completo</strong> por defecto. Hac&eacute; click en los que tienen <strong>clases</strong> y ajust&aacute; la hora de ese d&iacute;a abajo del calendario.</p>
     <div class="cal-header">
       <span>Lun</span><span>Mar</span><span>Mi&eacute;</span>
       <span>Jue</span><span>Vie</span><span>S&aacute;b</span><span>Dom</span>
     </div>
     <div class="cal-grid" id="calGrid"></div>
+    <div class="day-editor" id="dayEditor">
+      <div class="editor-title" id="editorTitle"></div>
+      <div class="time-row">
+        <input type="time" id="ed-s1"><span class="time-sep">&ndash;</span><input type="time" id="ed-e1"><span class="bloque-lbl">Bloque 1</span>
+      </div>
+      <div class="time-row">
+        <input type="time" id="ed-s2"><span class="time-sep">&ndash;</span><input type="time" id="ed-e2"><span class="bloque-lbl">Bloque 2 (opcional, dejalo vac&iacute;o si no hay)</span>
+      </div>
+      <div class="editor-actions">
+        <span class="reset-link" onclick="applyToAllClases()">Usar este horario en todos los d&iacute;as con clases</span>
+        <span class="reset-link" onclick="removeClases()">Quitar clases (volver a d&iacute;a completo)</span>
+      </div>
+    </div>
     <div class="note">
-      <strong>Record&aacute;:</strong> en d&iacute;as con clases no agendar entre las <strong id="note-e1">11:30</strong> y las <strong id="note-s2">16:00</strong> (colectivos impredecibles en Malta).
+      <strong>Record&aacute;:</strong> en los d&iacute;as con clases no se agenda entre los dos bloques (colectivos impredecibles en Malta).
     </div>
     <span class="reset-link" onclick="resetAll()">&#8635; Limpiar todo</span>
   </div>
@@ -168,24 +189,45 @@
 const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const WEBHOOK='/api/slack';
 let dayStates={};
+let dayHours={};
+let selectedDay=null;
 let monthStates={};
 const now=new Date();
 let currentMonth=now.getMonth(), currentYear=now.getFullYear();
 const g=id=>document.getElementById(id).value;
 
-function updateNoteHours(){
-  document.getElementById('note-e1').textContent=g('clases-e1');
-  document.getElementById('note-s2').textContent=g('clases-s2');
-}
-['full-start','full-end','clases-s1','clases-e1','clases-s2','clases-e2'].forEach(id=>{
-  document.getElementById(id).addEventListener('change',()=>{updateNoteHours();updateSummary();});
+['full-start','full-end'].forEach(id=>{
+  document.getElementById(id).addEventListener('change',updateSummary);
+});
+['s1','e1','s2','e2'].forEach(k=>{
+  document.getElementById('ed-'+k).addEventListener('change',()=>{
+    if(selectedDay===null||dayStates[selectedDay]!=='clases')return;
+    dayHours[selectedDay][k]=document.getElementById('ed-'+k).value;
+    renderCell(document.getElementById('day-'+selectedDay),selectedDay);
+    updateSummary();
+  });
 });
 
+function defaultHours(){
+  return{s1:g('clases-s1'),e1:g('clases-e1'),s2:g('clases-s2'),e2:g('clases-e2')};
+}
+function hoursStr(h){
+  return h.s1+'-'+h.e1+(h.s2&&h.e2?' / '+h.s2+'-'+h.e2:'');
+}
+function gapStr(h){
+  return h.e1&&h.s2&&h.e2?h.e1+' y '+h.s2:'';
+}
+function dayLabel(d){
+  const n=new Date(currentYear,currentMonth,d).toLocaleDateString('es-AR',{weekday:'short'}).replace('.','');
+  return n.charAt(0).toUpperCase()+n.slice(1)+' '+d;
+}
+
 function changeMonth(dir){
-  monthStates[currentYear+'_'+currentMonth]=Object.assign({},dayStates);
+  monthStates[currentYear+'_'+currentMonth]={states:Object.assign({},dayStates),hours:JSON.parse(JSON.stringify(dayHours))};
   currentMonth+=dir;
   if(currentMonth>11){currentMonth=0;currentYear++;}
   if(currentMonth<0){currentMonth=11;currentYear--;}
+  selectedDay=null;
   buildCalendar();
 }
 
@@ -196,31 +238,73 @@ function buildCalendar(){
   const days=new Date(year,month+1,0).getDate();
   let fd=new Date(year,month,1).getDay();fd=fd===0?6:fd-1;
   const grid=document.getElementById('calGrid');
-  grid.innerHTML='';dayStates={};
+  grid.innerHTML='';dayStates={};dayHours=saved?JSON.parse(JSON.stringify(saved.hours)):{};
   for(let i=0;i<fd;i++){const e=document.createElement('div');e.className='day-cell empty';grid.appendChild(e);}
   for(let d=1;d<=days;d++){
     const dow=new Date(year,month,d).getDay();
     const isWE=dow===0||dow===6;
-    dayStates[d]=saved?saved[d]:(isWE?'weekend':'full');
+    dayStates[d]=saved?saved.states[d]:(isWE?'weekend':'full');
     const cell=document.createElement('div');
     cell.id='day-'+d;
     renderCell(cell,d);
     if(!isWE)cell.onclick=()=>clickDay(d);
     grid.appendChild(cell);
   }
+  renderEditor();
   updateSummary();
 }
 
 function renderCell(cell,d){
   const s=dayStates[d];
-  cell.className='day-cell state-'+s;
-  const tag=s==='clases'?'<span class="day-tag">Clases</span>':'';
-  cell.innerHTML='<span class="day-num">'+d+'</span>'+tag;
+  cell.className='day-cell state-'+s+(d===selectedDay&&s==='clases'?' selected':'');
+  let extra='';
+  if(s==='clases'){
+    const h=dayHours[d];
+    extra='<span class="day-tag">Clases</span><span class="day-hrs">'+h.s1+'-'+h.e1+(h.s2&&h.e2?'<br>'+h.s2+'-'+h.e2:'')+'</span>';
+  }
+  cell.innerHTML='<span class="day-num">'+d+'</span>'+extra;
 }
 
 function clickDay(d){
-  dayStates[d]=dayStates[d]==='clases'?'full':'clases';
+  const prev=selectedDay;
+  if(dayStates[d]==='full'){
+    dayStates[d]='clases';
+    dayHours[d]=defaultHours();
+  }
+  selectedDay=d;
   renderCell(document.getElementById('day-'+d),d);
+  if(prev!==null&&prev!==d)renderCell(document.getElementById('day-'+prev),prev);
+  renderEditor();
+  updateSummary();
+}
+
+function renderEditor(){
+  const ed=document.getElementById('dayEditor');
+  if(selectedDay===null||dayStates[selectedDay]!=='clases'){ed.classList.remove('visible');return;}
+  const h=dayHours[selectedDay];
+  document.getElementById('editorTitle').textContent='Clases el '+dayLabel(selectedDay)+' — ajustá la hora de este día';
+  ['s1','e1','s2','e2'].forEach(k=>{document.getElementById('ed-'+k).value=h[k]||'';});
+  ed.classList.add('visible');
+}
+
+function removeClases(){
+  const d=selectedDay;
+  if(d===null)return;
+  dayStates[d]='full';
+  delete dayHours[d];
+  selectedDay=null;
+  renderCell(document.getElementById('day-'+d),d);
+  renderEditor();
+  updateSummary();
+}
+
+function applyToAllClases(){
+  if(selectedDay===null)return;
+  const h=dayHours[selectedDay];
+  getClasesDays().forEach(d=>{
+    dayHours[d]=Object.assign({},h);
+    renderCell(document.getElementById('day-'+d),d);
+  });
   updateSummary();
 }
 
@@ -228,39 +312,51 @@ function resetAll(){
   const month=currentMonth, year=currentYear;
   delete monthStates[year+'_'+month];
   const days=new Date(year,month+1,0).getDate();
+  dayHours={};selectedDay=null;
   for(let d=1;d<=days;d++){
     const dow=new Date(year,month,d).getDay();
     dayStates[d]=(dow===0||dow===6)?'weekend':'full';
     const c=document.getElementById('day-'+d);if(c)renderCell(c,d);
   }
+  renderEditor();
   updateSummary();
 }
 
 function getClasesDays(){
   return Object.keys(dayStates).map(Number).filter(d=>dayStates[d]==='clases').sort((a,b)=>a-b);
 }
+function getFullDays(){
+  return Object.keys(dayStates).map(Number).filter(d=>dayStates[d]==='full').sort((a,b)=>a-b);
+}
+function groupClases(){
+  const groups={};
+  getClasesDays().forEach(d=>{
+    const k=hoursStr(dayHours[d]);
+    (groups[k]=groups[k]||{hours:k,h:dayHours[d],days:[]}).days.push(d);
+  });
+  return Object.values(groups).sort((a,b)=>a.days[0]-b.days[0]);
+}
 
 function updateSummary(){
   const month=currentMonth, year=currentYear;
-  const clases=getClasesDays();
-  const fullDays=Object.keys(dayStates).map(Number).filter(d=>dayStates[d]==='full').sort((a,b)=>a-b);
+  const groups=groupClases();
+  const fullDays=getFullDays();
   const card=document.getElementById('summaryCard');
-  if(fullDays.length===0&&clases.length===0){card.classList.remove('visible');return;}
+  if(fullDays.length===0&&groups.length===0){card.classList.remove('visible');return;}
   card.classList.add('visible');
   const fs=g('full-start')+' - '+g('full-end');
-  const s1=g('clases-s1'),e1=g('clases-e1'),s2=g('clases-s2'),e2=g('clases-e2');
   document.getElementById('summaryTable').innerHTML=
     '<thead><tr><th>Estado</th><th>D&iacute;as</th><th>Horario (hora ARG)</th></tr></thead><tbody>'+
     (fullDays.length?'<tr><td><span class="badge badge-green">Completo</span></td><td>'+fullDays.join(', ')+'</td><td>'+fs+'</td></tr>':'')+
-    (clases.length?'<tr><td><span class="badge badge-amber">Clases</span></td><td>'+clases.join(', ')+'</td><td>'+s1+'-'+e1+' / '+s2+'-'+e2+'</td></tr>':'')+
+    groups.map(gr=>'<tr><td><span class="badge badge-amber">Clases</span></td><td>'+gr.days.join(', ')+'</td><td>'+gr.hours+'</td></tr>').join('')+
     '</tbody>';
-  const lines=[
-    'Tatiana — Horarios '+MONTHS[month]+' '+year,'',
-    'Trabaja día completo ('+fs+'): '+fullDays.join(', '),
-    ...(clases.length?['Tiene clases ('+s1+'-'+e1+' / '+s2+'-'+e2+'): '+clases.join(', ')]:[]),
-    '',
-    'En días con clases: no agendar entre las '+e1+' y las '+s2+' (colectivos Malta).'
-  ];
+  const lines=['Tatiana — Horarios '+MONTHS[month]+' '+year,'','Trabaja día completo ('+fs+'): '+fullDays.join(', ')];
+  groups.forEach(gr=>lines.push('Tiene clases ('+gr.hours+'): '+gr.days.join(', ')));
+  const gaps=groups.filter(gr=>gapStr(gr.h));
+  if(gaps.length){
+    lines.push('');
+    gaps.forEach(gr=>lines.push('Días '+gr.days.join(', ')+': no agendar entre las '+gapStr(gr.h).replace(' y ',' y las ')+' (colectivos Malta).'));
+  }
   document.getElementById('copyArea').textContent=lines.join('\n');
 }
 
@@ -281,14 +377,15 @@ function loadPrevState(month,year){
   catch{return null;}
 }
 
-function saveState(month,year,clases){
-  localStorage.setItem(storageKey(month,year),JSON.stringify({clases,ts:new Date().toISOString()}));
+function saveState(month,year,clases,detalle){
+  try{localStorage.setItem(storageKey(month,year),JSON.stringify({clases,detalle,ts:new Date().toISOString()}));}catch{}
 }
 
-function computeDiff(prevClases,newClases){
-  const added=newClases.filter(d=>!prevClases.includes(d));
-  const removed=prevClases.filter(d=>!newClases.includes(d));
-  return{added,removed};
+function computeDiff(prev,clases,detalle){
+  const added=clases.filter(d=>!prev.clases.includes(d));
+  const removed=prev.clases.filter(d=>!clases.includes(d));
+  const changed=prev.detalle?clases.filter(d=>prev.clases.includes(d)&&prev.detalle[d]&&hoursStr(prev.detalle[d])!==hoursStr(detalle[d])):[];
+  return{added,removed,changed};
 }
 
 const SLACK_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.95 9.79 19.79 19.79 0 01.88 1.18 2 2 0 012.86 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg>';
@@ -297,24 +394,32 @@ async function sendToSlack(){
   const month=currentMonth, year=currentYear;
   const mn=MONTHS[month];
   const clases=getClasesDays();
-  const fullDays=Object.keys(dayStates).map(Number).filter(d=>dayStates[d]==='full').sort((a,b)=>a-b);
+  const fullDays=getFullDays();
   const fs=g('full-start')+' - '+g('full-end');
-  const s1=g('clases-s1'),e1=g('clases-e1'),s2=g('clases-s2'),e2=g('clases-e2');
+
+  const incomplete=clases.find(d=>!dayHours[d].s1||!dayHours[d].e1);
+  if(incomplete){alert('Completá el horario del día '+incomplete+' (bloque 1).');return;}
+
+  const detalle={};
+  clases.forEach(d=>{detalle[d]=Object.assign({},dayHours[d]);});
+  const groups=groupClases();
 
   const prev=loadPrevState(month,year);
   const isModification=prev!==null;
-  const diff=isModification?computeDiff(prev.clases,clases):null;
+  const diff=isModification?computeDiff(prev,clases,detalle):null;
 
   const btn=document.getElementById('btnSlack');
   btn.classList.add('sending');
   btn.textContent='Enviando...';
 
+  const first=clases.length?dayHours[clases[0]]:null;
   const calendarState={
     month, year, mn,
     clases,
+    clasesDetalle: detalle,
     fullSchedule: fs,
-    clasesBloque1: s1+' - '+e1,
-    clasesBloque2: s2+' - '+e2,
+    clasesBloque1: first?first.s1+' - '+first.e1:'',
+    clasesBloque2: first&&first.s2&&first.e2?first.s2+' - '+first.e2:'',
     sentAt: new Date().toISOString()
   };
 
@@ -327,7 +432,8 @@ async function sendToSlack(){
 
   if(isModification&&diff){
     const changes=[];
-    diff.added.forEach(d=>changes.push('• Día '+d+': pasó a *parcial* (tiene clases)'));
+    diff.added.forEach(d=>changes.push('• Día '+d+': ahora tiene *clases* ('+hoursStr(detalle[d])+')'));
+    diff.changed.forEach(d=>changes.push('• Día '+d+': cambió el horario de clases ('+hoursStr(prev.detalle[d])+' → '+hoursStr(detalle[d])+')'));
     diff.removed.forEach(d=>changes.push('• Día '+d+': pasó a *día completo*'));
     if(changes.length){
       blocks.push({type:'section',text:{type:'mrkdwn',text:'*Cambios respecto al envío anterior:*\n'+changes.join('\n')}});
@@ -336,8 +442,10 @@ async function sendToSlack(){
   }
 
   if(fullDays.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'✅ *Trabaja día completo* ('+fs+')\nDías: '+fullDays.join(', ')}});
-  if(clases.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'🟡 *Trabaja parcial — tiene clases*\nBloque 1: '+s1+' - '+e1+'\nBloque 2: '+s2+' - '+e2+'\nDías: '+clases.join(', ')}});
-  blocks.push({type:'context',elements:[{type:'mrkdwn',text:'⚠️ En días con clases: no agendar entre las '+e1+' y las '+s2+' (colectivos Malta impredecibles)'}]});
+  groups.forEach(gr=>{
+    blocks.push({type:'section',text:{type:'mrkdwn',text:'🟡 *Tiene clases* ('+gr.hours+')\nDías: '+gr.days.join(', ')}});
+    if(gapStr(gr.h)) blocks.push({type:'context',elements:[{type:'mrkdwn',text:'⚠️ Días '+gr.days.join(', ')+': no agendar entre las '+gapStr(gr.h).replace(' y ',' y las ')+' (colectivos Malta impredecibles)'}]});
+  });
   blocks.push({type:'section',text:{type:'mrkdwn',text:'*<'+verUrl+'|Ver calendario online →>*'}});
 
   try{
@@ -347,7 +455,7 @@ async function sendToSlack(){
       body:JSON.stringify({blocks,text:(isModification?'⚠️ MODIFICACIÓN — ':'')+'Calendario Tatiana '+mn+' '+year,calendarState})
     });
     if(res.ok){
-      saveState(month,year,clases);
+      saveState(month,year,clases,detalle);
       showToast('toastOk');
     } else {
       showToast('toastErr');
@@ -365,7 +473,7 @@ function showToast(id){
   setTimeout(()=>t.classList.remove('show'),3000);
 }
 
-buildCalendar();updateNoteHours();
+buildCalendar();
 </script>
 </body>
 </html>
