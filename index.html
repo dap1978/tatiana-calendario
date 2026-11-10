@@ -112,37 +112,14 @@
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-label">02 &middot; Horarios habituales (editables)</div>
-    <div class="schedules-grid">
-      <div class="sched-item">
-        <div class="sched-label"><div class="sdot" style="background:var(--green-mid)"></div> D&iacute;a completo</div>
-        <div class="time-row">
-          <input type="time" id="full-start" value="09:00">
-          <span class="time-sep">&ndash;</span>
-          <input type="time" id="full-end" value="18:00">
-        </div>
-      </div>
-      <div class="sched-item">
-        <div class="sched-label"><div class="sdot" style="background:var(--amber-mid)"></div> D&iacute;a con clases (valor inicial)</div>
-        <div class="time-row">
-          <input type="time" id="clases-s1" value="08:00">
-          <span class="time-sep">&ndash;</span>
-          <input type="time" id="clases-e1" value="11:30">
-          <span class="bloque-lbl">Bloque 1</span>
-        </div>
-        <div class="time-row">
-          <input type="time" id="clases-s2" value="16:00">
-          <span class="time-sep">&ndash;</span>
-          <input type="time" id="clases-e2" value="19:00">
-          <span class="bloque-lbl">Bloque 2 (opcional)</span>
-        </div>
-      </div>
-    </div>
+  <div style="display:none">
+    <input type="time" id="full-start" value="09:00"><input type="time" id="full-end" value="18:00">
+    <input type="time" id="clases-s1" value="08:00"><input type="time" id="clases-e1" value="11:30">
+    <input type="time" id="clases-s2" value="16:00"><input type="time" id="clases-e2" value="19:00">
   </div>
 
   <div class="card card-orange">
-    <div class="card-label">03 &middot; Marc&aacute; los d&iacute;as con clases</div>
+    <div class="card-label">02 &middot; Marc&aacute; los d&iacute;as con clases</div>
     <p class="cal-hint">Todos los d&iacute;as laborables son <strong style="color:var(--green)">d&iacute;a completo</strong> por defecto. Hac&eacute; click en los que tienen <strong>clases</strong> y ajust&aacute; la hora de ese d&iacute;a abajo del calendario.</p>
     <div class="cal-header">
       <span>Lun</span><span>Mar</span><span>Mi&eacute;</span>
@@ -169,7 +146,7 @@
   </div>
 
   <div class="card summary-block" id="summaryCard">
-    <div class="card-label">04 &middot; Resumen generado</div>
+    <div class="card-label">03 &middot; Resumen generado</div>
     <table class="summary-table" id="summaryTable"></table>
     <div class="copy-area" id="copyArea"></div>
     <div class="btn-row">
