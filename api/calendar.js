@@ -15,17 +15,22 @@ module.exports = async function handler(req, res) {
 
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { result: keys } = await kvCmd(['KEYS', 'cal_*']);
+  try {
+    const { result: keys } = await kvCmd(['KEYS', 'cal_*']);
 
-  if (!keys || keys.length === 0) return res.status(200).json([]);
+    if (!keys || keys.length === 0) return res.status(200).json([]);
 
-  const { result: values } = await kvCmd(['MGET', ...keys]);
+    const { result: values } = await kvCmd(['MGET', ...keys]);
 
-  const calendars = values
-    .map(v => { try { return JSON.parse(v); } catch { return null; } })
-    .filter(Boolean)
-    .sort((a, b) => a.year !== b.year ? a.year - b.year : a.month - b.month)
-    .slice(-3);
+    const calendars = (values || [])
+      .map(v => { try { return JSON.parse(v); } catch { return null; } })
+      .filter(Boolean)
+      .sort((a, b) => a.year !== b.year ? a.year - b.year : a.month - b.month)
+      .slice(-3);
 
-  return res.status(200).json(calendars);
+    return res.status(200).json(calendars);
+  } catch (e) {
+    console.error('calendar handler error:', e.message);
+    return res.status(200).json([]);
+  }
 };
