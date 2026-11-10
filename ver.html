@@ -84,8 +84,9 @@ function renderMonth(cal){
   const hrs = h => h.s1+'-'+h.e1+(h.s2&&h.e2?' / '+h.s2+'-'+h.e2:'');
   const groups = {};
   if(detalle) Object.keys(detalle).map(Number).sort((a,b)=>a-b).forEach(d=>{
-    const k=hrs(detalle[d]);
-    (groups[k]=groups[k]||{hours:k,h:detalle[d],days:[]}).days.push(d);
+    const ar=cal.clasesAr&&cal.clasesAr[d];
+    const k=hrs(detalle[d])+'|'+(ar?hrs(ar):'');
+    (groups[k]=groups[k]||{hours:hrs(detalle[d]),h:detalle[d],ar,days:[]}).days.push(d);
   });
   const groupList = Object.values(groups).sort((a,b)=>a.days[0]-b.days[0]);
   const days = new Date(year, month+1, 0).getDate();
@@ -110,14 +111,14 @@ function renderMonth(cal){
       <div class="month-title">${MONTHS[month]} ${year}</div>
       <div class="month-updated">Actualizado ${timeAgo(sentAt)}</div>
       <div class="schedule-pills">
-        <div class="pill pill-green">✅ Día completo: ${fullSchedule}</div>
-        ${detalle ? groupList.map(gr=>`<div class="pill pill-amber">🟡 Clases ${gr.hours}: días ${gr.days.join(', ')}</div>`).join('') : (clasesDays.length?`<div class="pill pill-amber">🟡 Con clases: ${clasesBloque1} / ${clasesBloque2}</div>`:'')}
+        ${cal.fullGroups ? cal.fullGroups.map(f=>`<div class="pill pill-green">✅ Día completo (${f.days.length>1&&cal.fullGroups.length>1?'días '+f.days.join(', ')+': ':''}Malta ${f.malta} · Argentina ${f.ar})</div>`).join('') : `<div class="pill pill-green">✅ Día completo: ${fullSchedule}</div>`}
+        ${detalle ? groupList.map(gr=>`<div class="pill pill-amber">🟡 Clases días ${gr.days.join(', ')}: Malta ${gr.hours}${gr.ar?' · Argentina '+hrs(gr.ar):''}</div>`).join('') : (clasesDays.length?`<div class="pill pill-amber">🟡 Con clases: ${clasesBloque1} / ${clasesBloque2}</div>`:'')}
       </div>
       <div class="cal-header">
         <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
       </div>
       <div class="cal-grid">${cells}</div>
-      ${detalle ? groupList.filter(gr=>gr.h.e1&&gr.h.s2&&gr.h.e2).map(gr=>`<div class="note-box">⚠️ Días ${gr.days.join(', ')}: no agendar entre las ${gr.h.e1} y las ${gr.h.s2}</div>`).join('') : (clasesDays.length&&clasesBloque2?`<div class="note-box">⚠️ Días con clases (${clasesDays.join(', ')}): no agendar entre las ${clasesBloque1.split('-')[1].trim()} y las ${clasesBloque2.split('-')[0].trim()}</div>`:'')}
+      ${detalle ? groupList.filter(gr=>gr.h.e1&&gr.h.s2&&gr.h.e2).map(gr=>`<div class="note-box">⚠️ Días ${gr.days.join(', ')}: no agendar entre las ${gr.h.e1} y las ${gr.h.s2} (Malta)${gr.ar&&gr.ar.e1&&gr.ar.s2?' = '+gr.ar.e1+' y '+gr.ar.s2+' (Argentina)':''}</div>`).join('') : (clasesDays.length&&clasesBloque2?`<div class="note-box">⚠️ Días con clases (${clasesDays.join(', ')}): no agendar entre las ${clasesBloque1.split('-')[1].trim()} y las ${clasesBloque2.split('-')[0].trim()}</div>`:'')}
       <div class="legend-row">
         <div class="legend-item"><div class="ldot" style="background:var(--green-mid)"></div> Día completo</div>
         <div class="legend-item"><div class="ldot" style="background:var(--amber-mid)"></div> Tiene clases</div>

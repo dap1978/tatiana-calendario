@@ -197,6 +197,30 @@ function gapStr(h){
 function workStr(h){
   return 'de '+h.s1+' a '+h.e1+(h.s2&&h.e2?' y de '+h.s2+' a '+h.e2:'');
 }
+function tzOff(tz,ts){
+  const p=new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric'}).formatToParts(new Date(ts)).reduce((a,x)=>(a[x.type]=x.value,a),{});
+  return Date.UTC(+p.year,p.month-1,+p.day,+p.hour,+p.minute)-ts;
+}
+function mt2ar(d,t){
+  if(!t)return '';
+  const [h,m]=t.split(':').map(Number);
+  const guess=Date.UTC(currentYear,currentMonth,d,h,m);
+  let utc=guess-tzOff('Europe/Malta',guess);
+  utc=guess-tzOff('Europe/Malta',utc);
+  const x=new Date(utc+tzOff('America/Argentina/Buenos_Aires',utc));
+  return String(x.getUTCHours()).padStart(2,'0')+':'+String(x.getUTCMinutes()).padStart(2,'0');
+}
+function arHours(d,h){
+  return{s1:mt2ar(d,h.s1),e1:mt2ar(d,h.e1),s2:mt2ar(d,h.s2),e2:mt2ar(d,h.e2)};
+}
+function dualStr(h,ar){
+  return workStr(h)+' (Malta) = '+workStr(ar)+' (Argentina)';
+}
+function gapDual(h,ar){
+  const a=gapStr(h);
+  if(!a)return '';
+  return 'No disponible entre las '+a.replace(' y ',' y las ')+' (Malta) = las '+gapStr(ar).replace(' y ',' y las ')+' (Argentina)';
+}
 function dayLabel(d){
   const n=new Date(currentYear,currentMonth,d).toLocaleDateString('es-AR',{weekday:'short'}).replace('.','');
   return n.charAt(0).toUpperCase()+n.slice(1)+' '+d;
@@ -311,8 +335,19 @@ function getFullDays(){
 function groupClases(){
   const groups={};
   getClasesDays().forEach(d=>{
-    const k=hoursStr(dayHours[d]);
-    (groups[k]=groups[k]||{hours:k,h:dayHours[d],days:[]}).days.push(d);
+    const ar=arHours(d,dayHours[d]);
+    const k=hoursStr(dayHours[d])+'|'+hoursStr(ar);
+    (groups[k]=groups[k]||{hours:hoursStr(dayHours[d]),h:dayHours[d],ar,days:[]}).days.push(d);
+  });
+  return Object.values(groups).sort((a,b)=>a.days[0]-b.days[0]);
+}
+function groupFull(){
+  const h={s1:g('full-start'),e1:g('full-end'),s2:'',e2:''};
+  const groups={};
+  getFullDays().forEach(d=>{
+    const ar=arHours(d,h);
+    const k=hoursStr(ar);
+    (groups[k]=groups[k]||{h,ar,days:[]}).days.push(d);
   });
   return Object.values(groups).sort((a,b)=>a.days[0]-b.days[0]);
 }
@@ -320,21 +355,22 @@ function groupClases(){
 function updateSummary(){
   const month=currentMonth, year=currentYear;
   const groups=groupClases();
-  const fullDays=getFullDays();
+  const fulls=groupFull();
   const card=document.getElementById('summaryCard');
-  if(fullDays.length===0&&groups.length===0){card.classList.remove('visible');return;}
+  if(fulls.length===0&&groups.length===0){card.classList.remove('visible');return;}
   card.classList.add('visible');
-  const fs=g('full-start')+' - '+g('full-end');
+  const cellH=(h,ar)=>'Malta '+hoursStr(h)+'<br>Argentina '+hoursStr(ar);
   document.getElementById('summaryTable').innerHTML=
-    '<thead><tr><th>Estado</th><th>D&iacute;as</th><th>Horario (hora ARG)</th></tr></thead><tbody>'+
-    (fullDays.length?'<tr><td><span class="badge badge-green">Completo</span></td><td>'+fullDays.join(', ')+'</td><td>'+fs+'</td></tr>':'')+
-    groups.map(gr=>'<tr><td><span class="badge badge-amber">Clases</span></td><td>'+gr.days.join(', ')+'</td><td>'+gr.hours+'</td></tr>').join('')+
+    '<thead><tr><th>Estado</th><th>D&iacute;as</th><th>Horario</th></tr></thead><tbody>'+
+    fulls.map(f=>'<tr><td><span class="badge badge-green">Completo</span></td><td>'+f.days.join(', ')+'</td><td>'+cellH(f.h,f.ar)+'</td></tr>').join('')+
+    groups.map(gr=>'<tr><td><span class="badge badge-amber">Clases</span></td><td>'+gr.days.join(', ')+'</td><td>'+cellH(gr.h,gr.ar)+'</td></tr>').join('')+
     '</tbody>';
-  const lines=['Tatiana — Horarios '+MONTHS[month]+' '+year,'','✅ Día completo, de '+fs.replace(' - ',' a ')+':',fullDays.map(dayLabel).join(', ')];
+  const lines=['Tatiana \u2014 Horarios '+MONTHS[month]+' '+year,'(hora de Malta, con su equivalente en Argentina)'];
+  fulls.forEach(f=>lines.push('','\u2705 D\u00eda completo: '+f.days.map(dayLabel).join(', '),'Trabaja '+dualStr(f.h,f.ar)));
   groups.forEach(gr=>{
-    lines.push('','🟡 Con clases: '+gr.days.map(dayLabel).join(', '));
-    lines.push('Trabaja '+workStr(gr.h));
-    if(gapStr(gr.h)) lines.push('No disponible entre las '+gapStr(gr.h).replace(' y ',' y las '));
+    lines.push('','🟡 Con clases: '+gr.days.map(dayLabel).join(', '),'Trabaja '+dualStr(gr.h,gr.ar));
+    const gp=gapDual(gr.h,gr.ar);
+    if(gp)lines.push(gp);
   });
   document.getElementById('copyArea').textContent=lines.join('\n');
 }
@@ -396,6 +432,8 @@ async function sendToSlack(){
     month, year, mn,
     clases,
     clasesDetalle: detalle,
+    clasesAr: Object.fromEntries(clases.map(d=>[d,arHours(d,detalle[d])])),
+    fullGroups: groupFull().map(f=>({days:f.days,malta:hoursStr(f.h),ar:hoursStr(f.ar)})),
     fullSchedule: fs,
     clasesBloque1: first?first.s1+' - '+first.e1:'',
     clasesBloque2: first&&first.s2&&first.e2?first.s2+' - '+first.e2:'',
@@ -420,13 +458,14 @@ async function sendToSlack(){
     }
   }
 
-  if(fullDays.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'✅ *Día completo*, de '+fs.replace(' - ',' a ')+'\n'+fullDays.map(dayLabel).join(', ')}});
+  groupFull().forEach(f=>blocks.push({type:'section',text:{type:'mrkdwn',text:'\u2705 *D\u00eda completo:* '+f.days.map(dayLabel).join(', ')+'\nTrabaja '+dualStr(f.h,f.ar)}}));
   groups.forEach(gr=>{
-    let t='🟡 *Con clases:* '+gr.days.map(dayLabel).join(', ')+'\nTrabaja '+workStr(gr.h);
-    if(gapStr(gr.h)) t+='\n🚫 No disponible entre las '+gapStr(gr.h).replace(' y ',' y las ');
+    let t='🟡 *Con clases:* '+gr.days.map(dayLabel).join(', ')+'\nTrabaja '+dualStr(gr.h,gr.ar);
+    const gp=gapDual(gr.h,gr.ar);
+    if(gp)t+='\n🚫 '+gp;
     blocks.push({type:'section',text:{type:'mrkdwn',text:t}});
   });
-  blocks.push({type:'context',elements:[{type:'mrkdwn',text:'Horarios en hora Argentina'}]});
+  blocks.push({type:'context',elements:[{type:'mrkdwn',text:'Horarios cargados en hora de Malta, con su equivalente en Argentina'}]});
   blocks.push({type:'section',text:{type:'mrkdwn',text:'*<'+verUrl+'|Ver calendario online →>*'}});
 
   try{
