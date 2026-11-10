@@ -194,6 +194,9 @@ function hoursStr(h){
 function gapStr(h){
   return h.e1&&h.s2&&h.e2?h.e1+' y '+h.s2:'';
 }
+function workStr(h){
+  return 'de '+h.s1+' a '+h.e1+(h.s2&&h.e2?' y de '+h.s2+' a '+h.e2:'');
+}
 function dayLabel(d){
   const n=new Date(currentYear,currentMonth,d).toLocaleDateString('es-AR',{weekday:'short'}).replace('.','');
   return n.charAt(0).toUpperCase()+n.slice(1)+' '+d;
@@ -327,13 +330,12 @@ function updateSummary(){
     (fullDays.length?'<tr><td><span class="badge badge-green">Completo</span></td><td>'+fullDays.join(', ')+'</td><td>'+fs+'</td></tr>':'')+
     groups.map(gr=>'<tr><td><span class="badge badge-amber">Clases</span></td><td>'+gr.days.join(', ')+'</td><td>'+gr.hours+'</td></tr>').join('')+
     '</tbody>';
-  const lines=['Tatiana — Horarios '+MONTHS[month]+' '+year,'','Trabaja día completo ('+fs+'): '+fullDays.join(', ')];
-  groups.forEach(gr=>lines.push('Tiene clases ('+gr.hours+'): '+gr.days.join(', ')));
-  const gaps=groups.filter(gr=>gapStr(gr.h));
-  if(gaps.length){
-    lines.push('');
-    gaps.forEach(gr=>lines.push('Días '+gr.days.join(', ')+': no agendar entre las '+gapStr(gr.h).replace(' y ',' y las ')+' (colectivos Malta).'));
-  }
+  const lines=['Tatiana — Horarios '+MONTHS[month]+' '+year,'','✅ Día completo, de '+fs.replace(' - ',' a ')+':',fullDays.map(dayLabel).join(', ')];
+  groups.forEach(gr=>{
+    lines.push('','🟡 Con clases: '+gr.days.map(dayLabel).join(', '));
+    lines.push('Trabaja '+workStr(gr.h));
+    if(gapStr(gr.h)) lines.push('No disponible entre las '+gapStr(gr.h).replace(' y ',' y las '));
+  });
   document.getElementById('copyArea').textContent=lines.join('\n');
 }
 
@@ -409,20 +411,22 @@ async function sendToSlack(){
 
   if(isModification&&diff){
     const changes=[];
-    diff.added.forEach(d=>changes.push('• Día '+d+': ahora tiene *clases* ('+hoursStr(detalle[d])+')'));
-    diff.changed.forEach(d=>changes.push('• Día '+d+': cambió el horario de clases ('+hoursStr(prev.detalle[d])+' → '+hoursStr(detalle[d])+')'));
-    diff.removed.forEach(d=>changes.push('• Día '+d+': pasó a *día completo*'));
+    diff.added.forEach(d=>changes.push('• '+dayLabel(d)+': ahora tiene *clases*, trabaja '+workStr(detalle[d])));
+    diff.changed.forEach(d=>changes.push('• '+dayLabel(d)+': cambió el horario, antes '+workStr(prev.detalle[d])+', ahora '+workStr(detalle[d])));
+    diff.removed.forEach(d=>changes.push('• '+dayLabel(d)+': pasó a *día completo*'));
     if(changes.length){
       blocks.push({type:'section',text:{type:'mrkdwn',text:'*Cambios respecto al envío anterior:*\n'+changes.join('\n')}});
       blocks.push({type:'divider'});
     }
   }
 
-  if(fullDays.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'✅ *Trabaja día completo* ('+fs+')\nDías: '+fullDays.join(', ')}});
+  if(fullDays.length) blocks.push({type:'section',text:{type:'mrkdwn',text:'✅ *Día completo*, de '+fs.replace(' - ',' a ')+'\n'+fullDays.map(dayLabel).join(', ')}});
   groups.forEach(gr=>{
-    blocks.push({type:'section',text:{type:'mrkdwn',text:'🟡 *Tiene clases* ('+gr.hours+')\nDías: '+gr.days.join(', ')}});
-    if(gapStr(gr.h)) blocks.push({type:'context',elements:[{type:'mrkdwn',text:'⚠️ Días '+gr.days.join(', ')+': no agendar entre las '+gapStr(gr.h).replace(' y ',' y las ')+' (colectivos Malta impredecibles)'}]});
+    let t='🟡 *Con clases:* '+gr.days.map(dayLabel).join(', ')+'\nTrabaja '+workStr(gr.h);
+    if(gapStr(gr.h)) t+='\n🚫 No disponible entre las '+gapStr(gr.h).replace(' y ',' y las ');
+    blocks.push({type:'section',text:{type:'mrkdwn',text:t}});
   });
+  blocks.push({type:'context',elements:[{type:'mrkdwn',text:'Horarios en hora Argentina'}]});
   blocks.push({type:'section',text:{type:'mrkdwn',text:'*<'+verUrl+'|Ver calendario online →>*'}});
 
   try{
